@@ -23,7 +23,15 @@
 
 ;; Controllers
 
-(defn show-about-page [context] "About page, WIP")
+(defn show-about-page [context]
+  (response/ok
+"This is a simple to do list; users can add todos, mark them as
+complete/incomplete, or remove them.  The backend is somewhat more flexible,
+providing a full CRUD interface (but no searching) to todos.
+
+The app is accessible at /index.html
+
+See README.md in the main folder for more details."))
 
 (defn list-todos [context]
   (let [conn (dbcfg/get-conn)
