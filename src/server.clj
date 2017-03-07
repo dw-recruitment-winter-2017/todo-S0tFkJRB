@@ -19,7 +19,10 @@
     (http/start
       (http/create-server
         (merge service-map
-          {::http/join? false})))))
+          {::http/join? false
+           ::http/allowed-origins ["http://localhost:8090"]
+           ::http/resource-path "/static"
+           ::http/file-path "/static"})))))
 
 (defn stop-dev []
   (http/stop @server))

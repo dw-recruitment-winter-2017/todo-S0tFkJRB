@@ -28,5 +28,6 @@ pom.xml.asc
 
 # Builds
 resources/static/js/out/
+resources/static/js/
 build/
 
