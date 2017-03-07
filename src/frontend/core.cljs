@@ -13,8 +13,40 @@
   (reset! app-state
     {:todos (zipmap (map (fn [todo] (:id todo)) new-todos) new-todos)}))
 
+(defn todo-item-component []
+  (fn [{:keys [id description done]}]
+    [:div {:class "columns"}
+      [:div {:class "column is-10 notification is-info is-offset-1"}
+        [:div {:class "columns"}
+          [:div {:class "column is-1"}
+            [:a {:class (str "button " (if done "is-success" "is-warning"))}
+              (if done "Undo" "Do")]]
+          [:div {:class "column is-10"}
+            [:button {:class "delete"}]
+            [:p {:class "title is-3"} description]]]]
+    [:div [:p]]]))
+
 (defn app [props]
-  (println (:todos @app-state)))
+  (fn []
+    (let [todos (vals (:todos @app-state))]
+      [:div
+       [:h3 {:class "title is-1 has-text-centered"} "List of To Dos!"]
+       [:div#todoapp
+         [:div {:class "columns"}
+           [:div {:class "column is-8 is-offset-2"}
+             [:input {:type "text"
+                      :class "input is-large is-fullwidth"
+                      :placeholder "(Add an entry...)"}]]]
+         (when (-> todos count pos?)
+           [:div
+             [:div#main
+               [:div#todo-list
+                 (for [todo todos]
+                   ^{:key (:id todo)} [todo-item-component todo])]]
+             [:div {:class "columns"}
+               [:div {:class "column is-8 is-offset-5"}
+                 [:a {:class "button is-danger is-large"}
+                  "Remove all"]]]])]])))
 
 (defn load-app []
   (ajax/ajax-request
