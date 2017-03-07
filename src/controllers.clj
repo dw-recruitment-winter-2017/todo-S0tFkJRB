@@ -11,6 +11,11 @@
 (defn to-str-todo [[id description done]]
   {:id (str id) :description description :done done})
 
+(defn build-todo [tm]
+  {:id (d/squuid)
+   :description (:description tm)
+   :done (if (nil? (:done tm)) false (:done tm))})
+
 (defn build-updated-todo [tm]
   (merge {}
     (if (contains? tm :description) {:description (:description tm)})
@@ -31,7 +36,15 @@
                       [?e :todo/done ?done]
                       [?e :todo/removed false]] db)))))
 
-(defn create-todo [context])
+(defn create-todo [context]
+  (let [payload (:json-params context)]
+    (if-not (nil? (:description payload))
+      (let [conn (dbcfg/get-conn)
+            db (d/db conn)
+            todo (build-todo payload)]
+        @(d/transact conn [(dbcfg/build-todo todo)])
+        (response/created (assoc todo :id (str (:id todo)))))
+      (response/badrequest))))
 
 (defn update-todo [context]
   (let [payload (:json-params context)
@@ -57,6 +70,6 @@
             @(d/transact conn [dbtodo])
             (response/ok (assoc todo :id (str (:id todo)))))
           (response/notfound)))
-      (response/badrequest))))
+    (response/badrequest))))
 
 (defn delete-todo [context])

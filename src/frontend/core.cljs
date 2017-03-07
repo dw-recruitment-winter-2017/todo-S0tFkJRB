@@ -4,12 +4,20 @@
 
 (enable-console-print!)
 
+(def key-enter 13)
+
+(def key-escape 27)
+
 ;; General app state managers
 
 (defonce app-state (r/atom {:todos {}}))
 
 (defn get-todo [id]
   (get (:todos @app-state) id))
+
+(defn add-todo! [new-todo]
+  (reset! app-state
+    {:todos (assoc (:todos @app-state) (:id new-todo) new-todo)}))
 
 (defn reset-todo! [new-todo]
   (reset! app-state
@@ -21,6 +29,17 @@
 
 ;; Wrappers that send state update requests to the backend, and then call
 ;; the appropriate local (frontend) state manager on success
+
+(defn todo-add [description]
+  (println "Hey there")
+  (ajax/ajax-request
+    {:uri "/api/todo"
+     :method :post
+     :format (ajax/json-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})
+     :params {:description description}
+     :handler (fn [[ok res]] (if ok (add-todo! (js->clj res))
+                                    (println (str res))))}))
 
 (defn todo-toggle [id]
   (let [todo (get-todo id)]
@@ -35,6 +54,24 @@
                                         (println (str res))))}))))
 
 ;; Components
+
+(defn todo-input-component [on-save]
+  (let [desc (r/atom nil)
+        stop (fn [] (reset! desc ""))]
+    (fn []
+      [:input {:type "text"
+               :value @desc
+               :id "new-todo"
+               :class "input is-large is-fullwidth"
+               :placeholder "(Add an entry...)"
+               :on-blur stop
+               :on-change (fn [ev] (reset! desc (-> ev .-target .-value)))
+               ;; :on-change #(reset! desc (-> % .-target .-value))
+               :on-key-down (fn [ev]
+                              (let [keycode (.-which ev)]
+                                (cond
+                                  (= keycode key-enter) ((on-save @desc) (stop))
+                                  (= keycode key-escape) (stop))))}])))
 
 (defn todo-item-component []
   (fn [{:keys [id description done]}]
@@ -58,9 +95,7 @@
        [:div#todoapp
          [:div {:class "columns"}
            [:div {:class "column is-8 is-offset-2"}
-             [:input {:type "text"
-                      :class "input is-large is-fullwidth"
-                      :placeholder "(Add an entry...)"}]]]
+             [todo-input-component todo-add]]]
          (when (-> todos count pos?)
            [:div
              [:div#main
