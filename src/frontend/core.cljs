@@ -4,14 +4,37 @@
 
 (enable-console-print!)
 
+;; General app state managers
+
 (defonce app-state (r/atom {:todos {}}))
 
 (defn get-todo [id]
   (get (:todos @app-state) id))
 
+(defn reset-todo! [new-todo]
+  (reset! app-state
+    {:todos (assoc (:todos @app-state) (:id new-todo) new-todo)}))
+
 (defn load-todos! [new-todos]
   (reset! app-state
     {:todos (zipmap (map (fn [todo] (:id todo)) new-todos) new-todos)}))
+
+;; Wrappers that send state update requests to the backend, and then call
+;; the appropriate local (frontend) state manager on success
+
+(defn todo-toggle [id]
+  (let [todo (get-todo id)]
+    (if-not (nil? todo)
+      (ajax/ajax-request
+        {:uri (str "/api/todo/" id)
+         :method :patch
+         :format (ajax/json-request-format)
+         :response-format (ajax/json-response-format {:keywords? true})
+         :params {:done (not (:done todo))}
+         :handler (fn [[ok res]] (if ok (reset-todo! (js->clj res))
+                                        (println (str res))))}))))
+
+;; Components
 
 (defn todo-item-component []
   (fn [{:keys [id description done]}]
@@ -19,7 +42,8 @@
       [:div {:class "column is-10 notification is-info is-offset-1"}
         [:div {:class "columns"}
           [:div {:class "column is-1"}
-            [:a {:class (str "button " (if done "is-success" "is-warning"))}
+            [:a {:class (str "button " (if done "is-success" "is-warning"))
+                 :on-click (fn [ev] (todo-toggle id))}
               (if done "Undo" "Do")]]
           [:div {:class "column is-10"}
             [:button {:class "delete"}]
@@ -57,5 +81,7 @@
                 (if ok ((load-todos! (js->clj res))
                         (r/render [app] (js/document.getElementById "app")))
                   (println (str res))))}))
+
+;; Entry point
 
 (defn ^:export run [] (load-app))
