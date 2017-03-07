@@ -4,5 +4,13 @@
 
 (enable-console-print!)
 
-(defn main []
-  (println "Hey there"))
+(defn load-app []
+  (println "Hey there")
+  (ajax/ajax-request
+    {:uri "/api/todo"  ;; Would be better to use whatever `url-for` is
+     :method :get
+     :response-format (ajax/json-response-format {:keywords? true})
+     :handler (fn [[ok res]]
+                (if ok (println (str res))))}))
+
+(defn ^:export run [] (load-app))

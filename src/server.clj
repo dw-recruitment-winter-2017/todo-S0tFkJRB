@@ -6,7 +6,7 @@
 (def service-map
   {::http/routes routes/routes
    ::http/type :jetty
-   ::http/port 8090})
+   ::http/port 8890})
 
 (defn start []
   (http/start (http/create-server service-map)))
@@ -20,7 +20,7 @@
       (http/create-server
         (merge service-map
           {::http/join? false
-           ::http/allowed-origins ["http://localhost:8090"]
+           ::http/allowed-origins ["http://localhost:8890"]
            ::http/resource-path "/static"
            ::http/file-path "/static"})))))
 
