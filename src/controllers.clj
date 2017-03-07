@@ -72,4 +72,20 @@
           (response/notfound)))
     (response/badrequest))))
 
-(defn delete-todo [context])
+(defn delete-todo [context]
+  (let [given-id (:todo-id (:path-params context))]
+    (if-not (nil? given-id)
+      (let [conn (dbcfg/get-conn)
+            db (d/db conn)
+            uuid (java.util.UUID/fromString given-id)
+            results (d/q '[:find ?id
+                           :in $ ?id
+                           :where [?e :todo/id ?id]
+                                  [?e :todo/removed false]] db uuid)
+            result (first results)]
+        (if-not (nil? result)
+          (let [todo-id (first result)]
+            @(d/transact conn [{:todo/id todo-id :todo/removed true}])
+            (response/nocontent))
+          (response/notfound)))
+      (response/badrequest))))
